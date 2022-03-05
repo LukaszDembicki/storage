@@ -1,0 +1,51 @@
+version: "3.1"
+services:
+  nginx_click:
+    image: nginx:alpine
+    container_name: click_webserver
+    working_dir: /application
+    volumes:
+      - ./application:/application
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8097:80"
+    networks:
+      - click_network
+
+  phpfpm_click:
+    build: ./phpfpm
+    container_name: click_php
+    working_dir: /application
+    volumes:
+      - ./application:/application
+      - ./phpfpm/etc/xdebug3/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini # xdebug 3
+      - ./phpfpm/etc/xdebug3/error_reporting.ini:/usr/local/etc/php/conf.d/error_reporting.ini # xdebug 3
+      - ./phpfpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/php-ini-overrides.ini
+    expose:
+      - 9000
+    networks:
+      - click_network
+
+  mysql_click:
+    image: mysql
+    container_name: click_db_mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./dump/database_dump.sql:/docker-entrypoint-initdb.d/database_dump.sql:ro
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=click_
+      - MYSQL_PASSWORD=click_
+      - MYSQL_DATABASE=click_
+    networks:
+      - click_network
+    ports:
+    - "3326:3306"
+
+networks:
+  click_network:
+    driver: bridge
+
+volumes:
+  click_dat:
